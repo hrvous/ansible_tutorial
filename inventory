@@ -6,3 +6,6 @@ debian@192.168.64.5
 
 [file_servers]
 debian@192.168.64.6 
+
+[workstations]
+192.168.64.2
