@@ -4,13 +4,22 @@
   become: true
   pre_tasks:
 
-  - name: install updates (Debian)
+  - name: update repo cache (Debian)
     tags: always
     apt:
-      only_upgrade: yes
       update_cache: yes
+    changed_when: false
     when: ansible_distribution == "Debian"
 
+- hosts: all
+  become: true
+  tasks:
+
+  - name: add ssh key for simone
+    tags: always
+    authorized_key:
+      user: simone
+      key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIX01I4vUqhdEmS/L7fy/p76Afnoy20Ov93s/K3MpIQt ansible"
 
 - hosts: workstations
   become: true
