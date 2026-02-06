@@ -1,0 +1,108 @@
+---
+
+- hosts: all
+  become: true
+  pre_tasks:
+
+  - name: update repo cache (Debian)
+    tags: always
+    apt:
+      update_cache: yes
+    changed_when: false
+    when: ansible_distribution == "Debian"
+
+- hosts: all
+  become: true
+  tasks:
+
+  - name: add ssh key for simone
+    tags: always
+    authorized_key:
+      user: simone
+      key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIX01I4vUqhdEmS/L7fy/p76Afnoy20Ov93s/K3MpIQt ansible"
+
+- hosts: workstations
+  become: true
+  tasks:
+
+  - name: install unzip
+    package:
+      name: unzip
+
+  - name: install terraform
+    unarchive:
+      src: https://releases.hashicorp.com/terraform/1.14.3/terraform_1.14.3_linux_arm64.zip
+      dest: /usr/bin
+      remote_src: yes
+      mode: 0755
+      owner: root
+      group: root
+
+
+- hosts: web_servers
+  become: true
+  tasks:
+
+  - name: install apache and php for Debian users
+    tags: apache,apache2,debian
+    apt:
+      name:
+        - apache2
+        - libapache2-mod-php
+      state: latest
+      update_cache: yes
+    when: ansible_distribution == "Debian"
+
+  - name: change timeout setting
+    tags: apache,debian,apache2
+    lineinfile:
+      path: /etc/apache2/apache2.conf
+      regexp: ‘^Timeout’
+      line: Timeout 500
+    when: ansible_distribution == "Debian"
+    register: apache2
+
+  - name: restart apache2 (Debian)
+    tags: apache2
+    service:
+      name: apache2
+      state: restarted
+    when: apache2.changed
+
+  - name: copy default html file for the site
+    tags: apache,apache2,html
+    copy:
+      src: default_site.html
+      dest: /var/www/html/index.html
+      owner: root
+      group: root
+      mode: 0644
+
+  - name: start apache2 web server
+    tags: apache,debian,http
+    service:
+      name: apache2
+      state: started
+      enabled: yes
+    when: ansible_distribution == "Debian"
+
+- hosts: db_servers
+  become: true
+  tasks:
+
+  - name: install mariadb package (Debian)
+    tags: debian,db,maria
+    apt:
+      name: mariadb-server
+      state: latest
+    when: ansible_distribution == "Debian"
+
+- hosts: file_servers
+  become: true
+  tasks:
+
+  - name: install samba package
+    tags: samba
+    package:
+      name: samba
+      state: latest
