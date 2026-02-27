@@ -1,28 +1,21 @@
 - name: install apache and php for Debian users
   tags: apache,apache2,debian
-  apt:
+  package:
     name:
-      - apache2
-      - libapache2-mod-php
+      - "{{ apache_package }}"
+      - "{{ php_package }}"
     state: latest
     update_cache: yes
-  when: ansible_distribution == "Debian"
 
 - name: change timeout setting
   tags: apache,debian,apache2
   lineinfile:
     path: /etc/apache2/apache2.conf
     regexp: ‘^Timeout’
-    line: Timeout 500
+    line: Timeout 700
   when: ansible_distribution == "Debian"
   register: apache2
-
-- name: restart apache2 (Debian)
-  tags: apache2
-  service:
-    name: apache2
-    state: restarted
-  when: apache2.changed
+  notify: restart_apache
 
 - name: copy default html file for the site
   tags: apache,apache2,html
@@ -36,7 +29,6 @@
 - name: start apache2 web server
   tags: apache,debian,http
   service:
-    name: apache2
+    name: "{{ apache_service }}"
     state: started
     enabled: yes
-  when: ansible_distribution == "Debian"
